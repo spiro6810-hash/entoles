@@ -55,6 +55,13 @@ def parse_row_by_slices(line: str, slices: dict):
 def extract_rows_from_pdf(file_bytes: bytes) -> pd.DataFrame:
     header_mark = "Εντ.Συντήρ"
     columns = ["Εντ.Συντήρ", "Περιγραφή", "Εγκατάσταση", "Θέση", "Προτ", "Κατάστ"]
+    st.write("DEBUG: γραμμές που βρέθηκαν:", len(df))
+if not df.empty:
+    st.write("DEBUG: δείγμα 10 γραμμών:")
+    st.dataframe(df.head(10), use_container_width=True)
+
+    st.write("DEBUG: μοναδικές τιμές Κατάστ (top 30):")
+    st.write(df["Κατάστ"].astype(str).str.strip().value_counts().head(30))
 
     rows = []
     current_slices = None
@@ -163,5 +170,6 @@ if uploaded:
 
 else:
     st.info("Ανέβασε ένα PDF από την εκτύπωση του Baan για να δεις ανοιχτές ανά Γρ1/Γρ2/Γρ3/Τραμ.")
+
 
 
