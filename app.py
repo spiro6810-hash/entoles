@@ -116,7 +116,7 @@ if uploaded:
     # μόνο ανοιχτές
     df["Κατάστ"] = df["Κατάστ"].astype(str)
   df["Κατάστ"] = df["Κατάστ"].astype(str).str.strip()
-df_open = df[df["Κατάστ"].str.contains("Αποδεκ", na=False)].copy()
+  df_open = df[df["Κατάστ"].str.contains("Αποδεκ", na=False)].copy()
 
     # τμήμα
     df_open["Τμήμα"] = df_open["Εγκατάσταση"].apply(department_from_installation)
@@ -163,4 +163,5 @@ df_open = df[df["Κατάστ"].str.contains("Αποδεκ", na=False)].copy()
 
 else:
     st.info("Ανέβασε ένα PDF από την εκτύπωση του Baan για να δεις ανοιχτές ανά Γρ1/Γρ2/Γρ3/Τραμ.")
+
 
