@@ -10,8 +10,6 @@ import streamlit as st
 # ----------------------------
 # Business rules (δικά σου)
 # ----------------------------
-OPEN_STATUS_PART = "Αποδεκ"  # πιάνει Αποδεκτο / Αποδεκτ κλπ
-
 def department_from_installation(install: str) -> str:
     s = (install or "").strip().upper()
 
@@ -30,73 +28,66 @@ def department_from_installation(install: str) -> str:
     return "Άγνωστο"
 
 
+def is_open_status(status: str) -> bool:
+    # στο PDF σου εμφανίζεται ως Αποδεκτ
+    return (status or "").strip().startswith("Αποδεκ")
+
+
 # ----------------------------
-# PDF parsing helpers
+# Robust PDF row parsing (token-based)
 # ----------------------------
-def build_slices_from_header(header_line: str, columns: list[str]) -> dict:
+def parse_data_line_tokens(line: str) -> dict | None:
     """
-    Βρίσκει τα start indexes των column labels μέσα στη header_line και φτιάχνει slices.
+    Παίρνει μια γραμμή όπως:
+    434777 ΣΥΝΤΗΡΗΣΗ Διάφορα TWS-2.13,14 TW762 900001 ... ITS 004 Αποδεκτ 19/07/25
+    και βγάζει βασικά πεδία με split από το τέλος.
     """
-    starts = {}
-    for col in columns:
-        idx = header_line.find(col)
-        if idx >= 0:
-            starts[col] = idx
+    tokens = line.split()
+    if len(tokens) < 9:
+        return None
 
-    found = [(col, starts[col]) for col in columns if col in starts]
-    found.sort(key=lambda x: x[1])
+    # Πρέπει να ξεκινά με αριθμό εντολής
+    if not re.match(r"^\d+$", tokens[0]):
+        return None
 
-    slices = {}
-    for i, (col, start) in enumerate(found):
-        end = found[i + 1][1] if i + 1 < len(found) else None
-        slices[col] = (start, end)
+    work_order = tokens[0]
+    date_str = tokens[-1]
+    status = tokens[-2]
+    prio = tokens[-3]
+    pel = tokens[-4]
 
-    return slices
+    # Στα δικά σου δείγματα, η Εγκατάσταση είναι 8ο token από το τέλος
+    # (δηλ. tokens[-8]) και αυτό ταιριάζει με TW1/TW2/TW3/TWS/LS/L1/L2/L3.
+    installation = tokens[-8] if len(tokens) >= 8 else ""
 
+    # Ό,τι μένει ανάμεσα είναι “περιγραφή/λοιπά”
+    # (δεν μας νοιάζει τέλεια τώρα, αλλά το κρατάμε)
+    description = " ".join(tokens[1:-8]).strip() if len(tokens) > 8 else ""
 
-def parse_row_by_slices(line: str, slices: dict) -> dict:
-    out = {}
-    for col, (a, b) in slices.items():
-        out[col] = (line[a:b] if b is not None else line[a:]).strip()
-    return out
+    return {
+        "Εντ.Συντήρ": work_order,
+        "Περιγραφή": description,
+        "Εγκατάσταση": installation,
+        "Πελ": pel,
+        "Προτ": prio,
+        "Κατάστ": status,
+        "Ημ/νία": date_str,
+    }
 
 
 def extract_rows_from_pdf(file_bytes: bytes) -> pd.DataFrame:
-    """
-    Διαβάζει το PDF (κείμενο) και προσπαθεί να εξάγει γραμμές από τον πίνακα.
-    """
-    # Αυτά είναι τα labels όπως τα είδαμε στο BWPRINT PDF.
-    # Αν στο δικό σου PDF διαφέρουν, άλλαξέ τα εδώ.
-    header_mark = "Εντ.Συντήρ"
-    columns = ["Εντ.Συντήρ", "Περιγραφή", "Εγκατάσταση", "Θέση", "Προτ", "Κατάστ"]
-
     rows = []
-    current_slices = None
-    in_table = False
 
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
             text = page.extract_text() or ""
             for line in text.splitlines():
-
-                # Βρίσκουμε την κεφαλίδα του πίνακα
-                if header_mark in line and "Κατάστ" in line:
-                    current_slices = build_slices_from_header(line, columns)
-                    in_table = True
+                line = line.strip()
+                if not line:
                     continue
 
-                if not in_table or not current_slices:
-                    continue
-
-                if not line.strip():
-                    continue
-
-                # Συνήθως οι γραμμές δεδομένων ξεκινάνε με αριθμό εντολής
-                if not re.match(r"^\s*\d+", line):
-                    continue
-
-                row = parse_row_by_slices(line, current_slices)
-                if row.get("Εντ.Συντήρ"):
+                row = parse_data_line_tokens(line)
+                if row:
                     rows.append(row)
 
     return pd.DataFrame(rows)
@@ -122,48 +113,30 @@ if uploaded is None:
     st.info("Ανέβασε ένα PDF από την εκτύπωση του Baan για να δεις ανοιχτές ανά Γρ1/Γρ2/Γρ3/Τραμ.")
     st.stop()
 
-# Debug ότι ανέβηκε
 st.success(f"Ανέβηκε: {uploaded.name} ({uploaded.size} bytes)")
-st.write("MIME:", uploaded.type)
-
 file_bytes = uploaded.read()
 
 df = extract_rows_from_pdf(file_bytes)
 
 if df.empty:
-    st.error("Δεν μπόρεσα να βρω τον πίνακα μέσα στο PDF. Αν θες, κάνε copy-paste εδώ τη γραμμή κεφαλίδας του πίνακα.")
+    st.error("Δεν βρέθηκαν γραμμές εντολών μέσα στο PDF. (Ίσως το layout άλλαξε).")
     st.stop()
 
-# --- Φιλτράρουμε ανοιχτές: Κατάστ που περιέχει "Αποδεκ" ---
-if "Κατάστ" not in df.columns:
-    st.error("Δεν βρέθηκε στήλη 'Κατάστ' στο parsed αποτέλεσμα.")
-    st.write("Στήλες που βρέθηκαν:", list(df.columns))
-    st.dataframe(df.head(10), use_container_width=True)
-    st.stop()
-
-df["Κατάστ"] = df["Κατάστ"].astype(str).str.strip()
-df_open = df[df["Κατάστ"].str.contains(OPEN_STATUS_PART, na=False)].copy()
+# Ανοιχτές = Κατάστ που ξεκινάει με "Αποδεκ"
+df_open = df[df["Κατάστ"].apply(is_open_status)].copy()
 
 if df_open.empty:
-    st.warning("Δεν βρέθηκαν ανοιχτές εντολές (Κατάστ που να περιέχει 'Αποδεκ').")
+    st.warning("Δεν βρέθηκαν ανοιχτές εντολές (Κατάστ που να ξεκινά με 'Αποδεκ').")
     st.write("Τιμές που διαβάστηκαν στη στήλη Κατάστ (top 30):")
     st.write(df["Κατάστ"].value_counts().head(30))
-    st.subheader("Δείγμα γραμμών που διαβάστηκαν")
+    st.subheader("Δείγμα parsed γραμμών")
     st.dataframe(df.head(30), use_container_width=True)
     st.stop()
 
 # Τμήμα από Εγκατάσταση
-if "Εγκατάσταση" not in df_open.columns:
-    st.error("Δεν βρέθηκε στήλη 'Εγκατάσταση' στο parsed αποτέλεσμα.")
-    st.write("Στήλες που βρέθηκαν:", list(df_open.columns))
-    st.dataframe(df_open.head(10), use_container_width=True)
-    st.stop()
-
 df_open["Τμήμα"] = df_open["Εγκατάσταση"].apply(department_from_installation)
 
-# ----------------------------
 # Filters
-# ----------------------------
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -185,13 +158,11 @@ if prio:
 if install_search.strip():
     filtered = filtered[filtered["Εγκατάσταση"].astype(str).str.contains(install_search.strip(), case=False, na=False)]
 
-# ----------------------------
-# Summary + Table
-# ----------------------------
+# Summary + table
 summary = (
     filtered.groupby("Τμήμα")["Εντ.Συντήρ"]
     .count()
-    .rename("Ανοιχτές (Κατάστ περιέχει 'Αποδεκ')")
+    .rename("Ανοιχτές (Κατάστ=Αποδεκ...)")
     .reset_index()
     .sort_values("Τμήμα")
 )
@@ -202,9 +173,7 @@ st.dataframe(summary, use_container_width=True)
 st.subheader("Λίστα ανοιχτών")
 st.dataframe(filtered, use_container_width=True, height=520)
 
-# ----------------------------
 # Excel export
-# ----------------------------
 excel_bytes = make_excel_bytes(summary, filtered)
 stamp = datetime.now().strftime("%Y%m%d_%H%M")
 st.download_button(
@@ -213,6 +182,7 @@ st.download_button(
     file_name=f"open_orders_{stamp}.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
+
 
 
 
