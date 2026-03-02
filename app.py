@@ -1,5 +1,6 @@
 import io
 import re
+from pathlib import Path
 from datetime import datetime, date
 
 import pdfplumber
@@ -7,10 +8,15 @@ import pandas as pd
 import streamlit as st
 
 
+# ----------------------------
+# Patterns for Access PDF lines
+# Expected start:  Ημ/νία  Εντολή  Βάρδια  Τμήμα_κωδ ...
+# Example:        6/7/25  434190  2       2DA1 ...
+# ----------------------------
 DATE_RE = re.compile(r"^\d{1,2}/\d{1,2}/\d{2}$")        # 6/7/25
 ORDER_RE = re.compile(r"^\d{5,8}$")                    # 434190
 SHIFT_RE = re.compile(r"^\d+$")                        # 1,2,3
-DEPTCODE_RE = re.compile(r"^[123S][A-Z0-9]{2,6}$")     # 2DA1, 3DW1, 3T08, 2TS1 (και S...)
+DEPTCODE_RE = re.compile(r"^[123S][A-Z0-9]{2,6}$")     # 2DA1, 3DW1, 3T08, 2TS1, S...
 
 
 def dept_from_access_deptcode(code: str) -> str:
@@ -28,9 +34,8 @@ def dept_from_access_deptcode(code: str) -> str:
 
 def parse_access_line(line: str) -> dict | None:
     """
-    Περιμένει γραμμή τύπου:
-    6/7/25 434190 2 2DA1 _ 2SPD WS ...
-    αλλά είναι ανθεκτικό σε extra tokens, _, παρενθέσεις κλπ.
+    Robust token parsing.
+    Needs at least: date, order, shift, dept_code in the first tokens.
     """
     line = (line or "").strip()
     if not line:
@@ -40,22 +45,18 @@ def parse_access_line(line: str) -> dict | None:
     if len(tokens) < 4:
         return None
 
-    # Πρώτο token: ημερομηνία
+    # date
     if not DATE_RE.match(tokens[0]):
         return None
-
-    # Δεύτερο token: εντολή (digits)
+    # order
     if not ORDER_RE.match(tokens[1]):
         return None
-
-    # Τρίτο token: βάρδια (digits)
+    # shift
     if not SHIFT_RE.match(tokens[2]):
         return None
 
-    # Τέταρτο token: τμήμα κωδικός (2DA1/3DW1/...)
+    # dept code normally at token[3], but we also scan a little forward just in case
     dept_code = tokens[3].strip().upper()
-
-    # Αν για κάποιο λόγο ΔΕΝ είναι εδώ, ψάξε στα επόμενα 6 tokens (μερικές φορές “σπάει” περίεργα)
     if not DEPTCODE_RE.match(dept_code):
         dept_code = ""
         for t in tokens[3:10]:
@@ -102,23 +103,41 @@ def make_excel_bytes(summary_df: pd.DataFrame, details_df: pd.DataFrame) -> byte
 
 # ---------------- Streamlit UI ----------------
 st.set_page_config(page_title="Access Open Orders", layout="wide")
-st.title("Ανοιχτές (Κενές) Εντολές Εργασίας από Access PDF")
+st.title("Ανοιχτές (Κενές) Εντολές Εργασίας από Access PDF (Repo Mode)")
 
-uploaded = st.file_uploader("Ανέβασε το PDF (Access) με τις Κενές/Ανοιχτές εντολές", type=["pdf"])
+DEFAULT_PDF_PATH = Path(__file__).parent / "data" / "access_open.pdf"
 
-if uploaded is None:
-    st.info("Ανέβασε το PDF αναφοράς από Access για να δεις σύνοψη ανά τμήμα και λίστα ανοιχτών.")
-    st.stop()
+# Header / refresh
+left, right = st.columns([3, 1])
+with right:
+    if st.button("🔄 Ανανέωση", use_container_width=True):
+        st.rerun()
 
-st.success(f"Ανέβηκε: {uploaded.name} ({uploaded.size} bytes)")
-df_open = extract_open_from_access_pdf(uploaded.read())
+# Load PDF from repo
+if DEFAULT_PDF_PATH.exists():
+    file_bytes = DEFAULT_PDF_PATH.read_bytes()
+    pdf_mtime = datetime.fromtimestamp(DEFAULT_PDF_PATH.stat().st_mtime)
+    st.caption(
+        f"📄 PDF: data/access_open.pdf — τελευταία ενημέρωση: {pdf_mtime.strftime('%d/%m/%Y %H:%M')} "
+        f"— μέγεθος: {len(file_bytes)} bytes"
+    )
+else:
+    st.error("Δεν βρέθηκε το αρχείο: data/access_open.pdf μέσα στο repo.")
+    st.info("Ανέβασέ το στο GitHub στον φάκελο data/ με όνομα access_open.pdf.")
+    # optional fallback uploader
+    uploaded = st.file_uploader("Εναλλακτικά, ανέβασε το PDF εδώ", type=["pdf"])
+    if uploaded is None:
+        st.stop()
+    file_bytes = uploaded.read()
+    st.success(f"Ανέβηκε προσωρινά: {uploaded.name} ({len(file_bytes)} bytes)")
+
+df_open = extract_open_from_access_pdf(file_bytes)
 
 if df_open.empty:
-    st.error("Δεν βρέθηκαν γραμμές εντολών. (Ίσως το PDF είναι σε άλλη μορφή)")
-    st.write("Tip: Στείλε μου 2-3 γραμμές copy-paste από το PDF για να το προσαρμόσω 100%.")
+    st.error("Δεν βρέθηκαν γραμμές εντολών μέσα στο PDF. (Ίσως άλλαξε το layout).")
     st.stop()
 
-# Quick filters
+# ---------------- Quick filters ----------------
 st.subheader("Γρήγορα φίλτρα")
 c1, c2, c3, c4, c5 = st.columns(5)
 if "quick_dept" not in st.session_state:
@@ -140,8 +159,8 @@ with c5:
     if st.button("Μόνο Τραμ", use_container_width=True):
         st.session_state.quick_dept = "Τραμ"
 
-# Filters
-col1, col2, col3 = st.columns(3)
+# ---------------- Filters ----------------
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     dept_options = sorted(df_open["Τμήμα"].unique().tolist())
@@ -157,6 +176,9 @@ with col2:
 with col3:
     age_bucket = st.selectbox("Παλαιότητα", ["Όλες", "> 7 μέρες", "> 30 μέρες"], index=0)
 
+with col4:
+    order_search = st.text_input("Αναζήτηση Εντολής (π.χ. 434190)")
+
 filtered = df_open[df_open["Τμήμα"].isin(dept)].copy()
 filtered = filtered[filtered["Βάρδια"].astype(str).isin(shift)]
 
@@ -165,6 +187,10 @@ if age_bucket == "> 7 μέρες":
 elif age_bucket == "> 30 μέρες":
     filtered = filtered[filtered["Ημέρες_ανοικτή"] > 30]
 
+if order_search.strip():
+    filtered = filtered[filtered["Εντολή"].astype(str).str.contains(order_search.strip(), na=False)]
+
+# ---------------- Summary ----------------
 summary = (
     filtered.groupby("Τμήμα")["Εντολή"]
     .count()
@@ -191,11 +217,13 @@ st.dataframe(summary, use_container_width=True)
 st.subheader("Παλαιότητα ανά τμήμα")
 st.dataframe(aging, use_container_width=True)
 
+# ---------------- Details ----------------
 st.subheader("Λίστα ανοιχτών")
 show_cols = ["Τμήμα", "Εντολή", "Ημ/νία", "Ημέρες_ανοικτή", "Βάρδια", "Τμήμα_κωδ", "Raw"]
 filtered_view = filtered[show_cols].sort_values(["Τμήμα", "Ημέρες_ανοικτή"], ascending=[True, False])
 st.dataframe(filtered_view, use_container_width=True, height=520)
 
+# ---------------- Export ----------------
 excel_bytes = make_excel_bytes(aging, filtered_view)
 stamp = datetime.now().strftime("%Y%m%d_%H%M")
 st.download_button(
@@ -204,6 +232,7 @@ st.download_button(
     file_name=f"access_open_orders_{stamp}.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
+
 
 
 
