@@ -23,6 +23,14 @@ with pdfplumber.open("data/access_open.pdf") as pdf:
     for page in pdf.pages:
         text += page.extract_text() or ""
         text += "\n"
+        show_text = st.checkbox("Εμφάνιση κειμένου PDF")
+
+if show_text:
+    st.text_area(
+        "Κείμενο PDF",
+        text[:30000],
+        height=600
+    )
 show_text = st.checkbox("Εμφάνιση κειμένου PDF")
 
 if show_text:
