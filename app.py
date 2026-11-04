@@ -76,6 +76,19 @@ open_orders = open_orders[
 st.success(
     f"Βρέθηκαν {len(open_orders)} κενές εντολές"
 )
+st.write("Σύνολο ανά TSection")
+
+section_summary = (
+    open_orders.groupby("TSection")
+    .size()
+    .reset_index(name="Σύνολο")
+    .sort_values("Σύνολο", ascending=False)
+)
+
+st.dataframe(
+    section_summary,
+    use_container_width=True
+)
 # -----------------------------
 # Εμφάνιση
 # -----------------------------
