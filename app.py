@@ -26,6 +26,9 @@ erg = pd.read_excel(
     "data/Εργασίες βάρδιας.xlsx",
     engine="openpyxl"
 )
+st.subheader("Στήλες Εργασιών Βάρδιας")
+
+st.write(erg.columns.tolist())
 
 # ==================================================
 # ΚΑΘΑΡΙΣΜΟΣ
