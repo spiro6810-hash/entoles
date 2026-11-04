@@ -1,16 +1,16 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Εκκρεμείς Εντολές")
+st.set_page_config(page_title="Κενές Εντολές")
 
-st.title("Εκκρεμείς Εντολές BAAN")
+st.title("Κενές Εντολές")
 
-# =====================
+# -----------------------------
 # Φόρτωση αρχείων
-# =====================
+# -----------------------------
 
-baan = pd.read_excel(
-    "data/New Microsoft Excel Worksheet.xlsx",
+prog = pd.read_excel(
+    "data/ΠρογΕργασίες.xlsx",
     engine="openpyxl"
 )
 
@@ -19,45 +19,55 @@ erg = pd.read_excel(
     engine="openpyxl"
 )
 
-# =====================
-# Καθαρισμός εντολών
-# =====================
+# -----------------------------
+# Καθαρισμός Εντολής
+# -----------------------------
 
-baan["Εντολή"] = baan["Εντολή"].astype(str).str.strip()
+prog["Εντολή"] = prog["Εντολή"].astype(str).str.strip()
 erg["Εντολή"] = erg["Εντολή"].astype(str).str.strip()
 
-# =====================
-# Εκκρεμείς = υπάρχουν στο BAAN
-# αλλά όχι στις Εργασίες Βάρδιας
-# =====================
+# -----------------------------
+# Left Join
+# -----------------------------
 
-open_orders = baan[
-    ~baan["Εντολή"].isin(erg["Εντολή"])
+merged = prog.merge(
+    erg[["Εντολή", "Εργασία", "Άτομα"]],
+    on="Εντολή",
+    how="left"
+)
+
+# -----------------------------
+# Κενές εντολές
+# -----------------------------
+
+open_orders = merged[
+    (merged["Ακύρωση"] == False)
+    &
+    (merged["Εργασία"].isna())
+    &
+    (merged["Άτομα"].isna())
 ]
 
 st.success(
-    f"Βρέθηκαν {len(open_orders)} εκκρεμείς εντολές"
+    f"Βρέθηκαν {len(open_orders)} κενές εντολές"
 )
 
-# =====================
+# -----------------------------
 # Εμφάνιση
-# =====================
+# -----------------------------
 
 cols = [
-    "Ημ/νία",
-    "Τμήμα",
-    "Εγκατάσταση",
-    "Περιγραφή εργασίας",
-    "Υπεύθυνος",
-    "Εντολή"
+    "Date",
+    "TSection",
+    "Location",
+    "WorkDescription",
+    "Εντολή",
+    "Υπεύθυνος Βάρδιας"
 ]
 
-available_cols = [
-    c for c in cols
-    if c in open_orders.columns
-]
+cols = [c for c in cols if c in open_orders.columns]
 
 st.dataframe(
-    open_orders[available_cols],
+    open_orders[cols],
     use_container_width=True
 )
