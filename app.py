@@ -162,3 +162,16 @@ st.dataframe(
     display_df,
     use_container_width=True
 )
+st.subheader("Έλεγχος Βάρδιας")
+
+st.dataframe(
+    prog[
+        [
+            "Date",
+            "Start",
+            "End",
+            "Εντολή"
+        ]
+    ].head(50),
+    use_container_width=True
+)
