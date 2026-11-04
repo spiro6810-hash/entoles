@@ -127,3 +127,7 @@ st.dataframe(
     summary,
     use_container_width=True
 )
+st.subheader("Πρώτες γραμμές PDF")
+
+for line in lines[:300]:
+    st.write(line)
