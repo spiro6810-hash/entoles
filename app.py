@@ -1,33 +1,38 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Έλεγχος Εκκρεμών")
+st.set_page_config(page_title="Έλεγχος Excel")
 
-st.title("Έλεγχος Εκκρεμών Εντολών")
+st.title("Έλεγχος BAAN και Εργασιών Βάρδιας")
 
-df = pd.read_excel(
-    "data/ΠρογΕργασίες.xlsx",
+baan = pd.read_excel(
+    "data/New Microsoft Excel Worksheet.xlsx",
     engine="openpyxl"
 )
 
-# Δες μόνο εντολές χωρίς περιγραφή εργασίας
-open_df = df[
-    df["WorkDescription"].isna()
-]
+erg = pd.read_excel(
+    "data/Εργασίες βάρδιας.xlsx",
+    engine="openpyxl"
+)
 
-st.success(f"Βρέθηκαν {len(open_df)} εγγραφές χωρίς WorkDescription")
+st.subheader("Στήλες BAAN")
 
-cols = [
-    "Date",
-    "TSection",
-    "Location",
-    "Εντολή",
-    "Υπεύθυνος Βάρδιας",
-    "Ακύρωση",
-    "Άκυρη"
-]
+st.write(baan.columns.tolist())
+
+st.subheader("Στήλες Εργασιών Βάρδιας")
+
+st.write(erg.columns.tolist())
+
+st.subheader("Πρώτες 10 γραμμές BAAN")
 
 st.dataframe(
-    open_df[cols],
+    baan.head(10),
+    use_container_width=True
+)
+
+st.subheader("Πρώτες 10 γραμμές Εργασιών Βάρδιας")
+
+st.dataframe(
+    erg.head(10),
     use_container_width=True
 )
