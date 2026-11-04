@@ -39,6 +39,25 @@ for line in lines:
 df = pd.DataFrame(rows)
 
 st.success(f"Βρέθηκαν {len(df)} ανοιχτές εντολές")
+c1, c2, c3 = st.columns(3)
+
+with c1:
+    st.metric(
+        "Ανοιχτές Εντολές",
+        len(filtered)
+    )
+
+with c2:
+    st.metric(
+        "Πρώτη Ημερομηνία",
+        filtered["Ημερομηνία"].min().strftime("%d/%m/%Y")
+    )
+
+with c3:
+    st.metric(
+        "Τελευταία Ημερομηνία",
+        filtered["Ημερομηνία"].max().strftime("%d/%m/%Y")
+    )
 
 df["Ημερομηνία"] = pd.to_datetime(
     df["Ημερομηνία"],
