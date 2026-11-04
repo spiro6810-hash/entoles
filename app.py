@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Κενές Εντολές")
+st.set_page_config(page_title="Κενές Εντολές", layout="wide")
 
 st.title("Κενές Εντολές")
 
-# -----------------------------
-# Φόρτωση αρχείων
-# -----------------------------
+# ----------------------------------
+# Φόρτωση Excel
+# ----------------------------------
 
 prog = pd.read_excel(
     "data/ΠρογΕργασίες.xlsx",
@@ -19,16 +19,21 @@ erg = pd.read_excel(
     engine="openpyxl"
 )
 
-# -----------------------------
-# Καθαρισμός Εντολής
-# -----------------------------
+# ----------------------------------
+# Καθαρισμός δεδομένων
+# ----------------------------------
 
 prog["Εντολή"] = prog["Εντολή"].astype(str).str.strip()
 erg["Εντολή"] = erg["Εντολή"].astype(str).str.strip()
 
-# -----------------------------
-# Left Join
-# -----------------------------
+prog["Date"] = pd.to_datetime(
+    prog["Date"],
+    errors="coerce"
+)
+
+# ----------------------------------
+# LEFT JOIN
+# ----------------------------------
 
 merged = prog.merge(
     erg[["Εντολή", "Εργασία", "Άτομα"]],
@@ -36,9 +41,9 @@ merged = prog.merge(
     how="left"
 )
 
-# -----------------------------
-# Κενές εντολές
-# -----------------------------
+# ----------------------------------
+# Κενές Εντολές
+# ----------------------------------
 
 open_orders = merged[
     (merged["Ακύρωση"] == False)
@@ -46,12 +51,11 @@ open_orders = merged[
     (merged["Εργασία"].isna())
     &
     (merged["Άτομα"].isna())
-]
+].copy()
 
-open_orders["Date"] = pd.to_datetime(
-    open_orders["Date"],
-    errors="coerce"
-)
+# ----------------------------------
+# Φίλτρα ημερομηνίας
+# ----------------------------------
 
 col1, col2 = st.columns(2)
 
@@ -63,48 +67,4 @@ with col1:
 
 with col2:
     to_date = st.date_input(
-        "Έως",
-        value=open_orders["Date"].max().date()
-    )
-
-open_orders = open_orders[
-    (open_orders["Date"] >= pd.Timestamp(from_date))
-    &
-    (open_orders["Date"] <= pd.Timestamp(to_date))
-]
-
-st.success(
-    f"Βρέθηκαν {len(open_orders)} κενές εντολές"
-)
-st.write("Σύνολο ανά TSection")
-
-section_summary = (
-    open_orders.groupby("TSection")
-    .size()
-    .reset_index(name="Σύνολο")
-    .sort_values("Σύνολο", ascending=False)
-)
-
-st.dataframe(
-    section_summary,
-    use_container_width=True
-)
-# -----------------------------
-# Εμφάνιση
-# -----------------------------
-
-cols = [
-    "Date",
-    "TSection",
-    "Location",
-    "WorkDescription",
-    "Εντολή",
-    "Υπεύθυνος Βάρδιας"
-]
-
-cols = [c for c in cols if c in open_orders.columns]
-
-st.dataframe(
-    open_orders[cols],
-    use_container_width=True
-)
+        "Έ
