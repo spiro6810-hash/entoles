@@ -29,6 +29,12 @@ erg = pd.read_excel(
 st.subheader("Στήλες Εργασιών Βάρδιας")
 
 st.write(erg.columns.tolist())
+st.subheader("Δείγμα Εργασιών Βάρδιας")
+
+st.dataframe(
+    erg.head(20),
+    use_container_width=True
+)
 
 # ==================================================
 # ΚΑΘΑΡΙΣΜΟΣ
