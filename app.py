@@ -7,6 +7,7 @@ st.set_page_config(
 )
 
 st.title("Κενές Εντολές")
+st.write(prog.columns.tolist())
 
 # =====================================
 # Φόρτωση Excel
