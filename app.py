@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import io
 
-# =====================================
+# ==================================================
 # ΡΥΘΜΙΣΕΙΣ
-# =====================================
+# ==================================================
 
 st.set_page_config(
     page_title="Κενές Εντολές",
@@ -13,9 +13,9 @@ st.set_page_config(
 
 st.title("Κενές Εντολές")
 
-# =====================================
-# ΦΟΡΤΩΣΗ ΑΡΧΕΙΩΝ
-# =====================================
+# ==================================================
+# ΦΟΡΤΩΣΗ EXCEL
+# ==================================================
 
 prog = pd.read_excel(
     "data/ΠρογΕργασίες.xlsx",
@@ -27,9 +27,9 @@ erg = pd.read_excel(
     engine="openpyxl"
 )
 
-# =====================================
-# ΚΑΘΑΡΙΣΜΟΣ ΔΕΔΟΜΕΝΩΝ
-# =====================================
+# ==================================================
+# ΚΑΘΑΡΙΣΜΟΣ
+# ==================================================
 
 prog["Εντολή"] = prog["Εντολή"].astype(str).str.strip()
 erg["Εντολή"] = erg["Εντολή"].astype(str).str.strip()
@@ -39,9 +39,9 @@ prog["Date"] = pd.to_datetime(
     errors="coerce"
 )
 
-# =====================================
-# LEFT JOIN
-# =====================================
+# ==================================================
+# JOIN
+# ==================================================
 
 merged = prog.merge(
     erg[["Εντολή", "Εργασία", "Άτομα"]],
@@ -49,9 +49,9 @@ merged = prog.merge(
     how="left"
 )
 
-# =====================================
+# ==================================================
 # ΚΕΝΕΣ ΕΝΤΟΛΕΣ
-# =====================================
+# ==================================================
 
 open_orders = merged[
     (merged["Ακύρωση"] == False)
@@ -61,9 +61,9 @@ open_orders = merged[
     (merged["Άτομα"].isna())
 ].copy()
 
-# =====================================
+# ==================================================
 # ΦΙΛΤΡΑ ΗΜΕΡΟΜΗΝΙΑΣ
-# =====================================
+# ==================================================
 
 col1, col2 = st.columns(2)
 
@@ -85,9 +85,9 @@ open_orders = open_orders[
     (open_orders["Date"] <= pd.Timestamp(to_date))
 ]
 
-# =====================================
+# ==================================================
 # ΒΑΡΔΙΑ
-# =====================================
+# ==================================================
 
 def get_shift(value):
 
@@ -102,28 +102,15 @@ def get_shift(value):
     if value.startswith("14"):
         return "2"
 
-    if value.startswith("22"):
-        return "3"
-
-    if (
-        value.startswith("00")
-        or value.startswith("01")
-        or value.startswith("02")
-        or value.startswith("03")
-        or value.startswith("04")
-        or value.startswith("05")
-    ):
-        return "3"
-
-    return ""
+    return "3"
 
 open_orders["Βάρδια"] = open_orders["Start"].apply(
     get_shift
 )
 
-# =====================================
+# ==================================================
 # ΕΔΡΑ
-# =====================================
+# ==================================================
 
 open_orders["Έδρα"] = (
     open_orders["TSection"]
@@ -137,9 +124,23 @@ open_orders["Έδρα"] = (
     })
 )
 
-# =====================================
+# ==================================================
+# ΚΑΘΑΡΙΣΜΟΣ ΕΝΤΟΛΗΣ
+# ==================================================
+
+open_orders["Εντολή"] = (
+    pd.to_numeric(
+        open_orders["Εντολή"],
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
+    .astype(str)
+)
+
+# ==================================================
 # ΜΕΤΡΗΤΕΣ
-# =====================================
+# ==================================================
 
 st.success(
     f"Βρέθηκαν {len(open_orders)} κενές εντολές"
@@ -177,9 +178,9 @@ with c3:
         )
     )
 
-# =====================================
-# ΑΝΑΛΥΤΙΚΗ ΑΝΑΦΟΡΑ
-# =====================================
+# ==================================================
+# REPORT
+# ==================================================
 
 report_df = open_orders.copy()
 
@@ -187,21 +188,7 @@ report_df["Date"] = pd.to_datetime(
     report_df["Date"]
 ).dt.strftime("%d/%m/%Y")
 
-report_df["Εντολή"] = (
-    pd.to_numeric(
-        report_df["Εντολή"],
-        errors="coerce"
-    )
-    .fillna(0)
-    .astype(int)
-    .astype(str)
-)
-
-for area in [
-    "Γραμμή 1",
-    "Σεπόλια",
-    "Ελληνικό"
-]:
+for area in ["Γραμμή 1", "Σεπόλια", "Ελληνικό"]:
 
     section = report_df[
         report_df["Έδρα"] == area
@@ -210,18 +197,22 @@ for area in [
     st.subheader(
         f"{area} - Σύνολο {len(section)}"
     )
-shift_summary = (
-    section.groupby("Βάρδια")
-    .size()
-    .reset_index(name="Σύνολο")
-    .sort_values("Βάρδια")
-)
 
-st.dataframe(
-    shift_summary,
-    use_container_width=True
-)
     if len(section) > 0:
+
+        shift_summary = (
+            section.groupby("Βάρδια")
+            .size()
+            .reset_index(name="Σύνολο")
+            .sort_values("Βάρδια")
+        )
+
+        st.write("Ανά Βάρδια")
+
+        st.dataframe(
+            shift_summary,
+            use_container_width=True
+        )
 
         st.dataframe(
             section[
@@ -236,9 +227,9 @@ st.dataframe(
             use_container_width=True
         )
 
-# =====================================
-# ΕΞΑΓΩΓΗ EXCEL
-# =====================================
+# ==================================================
+# EXCEL EXPORT
+# ==================================================
 
 output = io.BytesIO()
 
@@ -256,11 +247,7 @@ with pd.ExcelWriter(
         section = report_df[
             report_df["Έδρα"] == area
         ][
-            [
-                "Date",
-                "Βάρδια",
-                "Εντολή"
-            ]
+            ["Date", "Βάρδια", "Εντολή"]
         ].copy()
 
         summary_row = pd.DataFrame({
@@ -274,9 +261,7 @@ with pd.ExcelWriter(
             ignore_index=True
         )
 
-        sheet_name = (
-            area.replace(" ", "")
-        )
+        sheet_name = area.replace(" ", "")
 
         export_df.to_excel(
             writer,
@@ -287,7 +272,7 @@ with pd.ExcelWriter(
 excel_data = output.getvalue()
 
 st.download_button(
-    label="⬇️ Κατέβασε Αναφορά Excel",
+    "⬇️ Κατέβασε Αναφορά Excel",
     data=excel_data,
     file_name="Κενές_Εντολές.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
