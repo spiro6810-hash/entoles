@@ -200,7 +200,11 @@ report_cols = [
     "Εντολή"
 ]
 
-for code, title in line_names.items():
+for title in [
+    "Γραμμή 1",
+    "Σεπόλια",
+    "Ελληνικό"
+]:
 
     section = report_df[
         report_df["Έδρα"] == title
