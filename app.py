@@ -69,3 +69,16 @@ filtered = df[
 st.write(f"Βρέθηκαν {len(filtered)} εντολές στο διάστημα")
 
 st.dataframe(filtered, use_container_width=True)
+st.subheader("Σύνοψη ανά ημερομηνία")
+
+summary = (
+    filtered.groupby("Ημερομηνία")
+    .size()
+    .reset_index(name="Σύνολο Εντολών")
+)
+
+st.dataframe(
+    summary.sort_values("Ημερομηνία"),
+    use_container_width=True
+)
+
