@@ -210,7 +210,17 @@ for area in [
     st.subheader(
         f"{area} - Σύνολο {len(section)}"
     )
+shift_summary = (
+    section.groupby("Βάρδια")
+    .size()
+    .reset_index(name="Σύνολο")
+    .sort_values("Βάρδια")
+)
 
+st.dataframe(
+    shift_summary,
+    use_container_width=True
+)
     if len(section) > 0:
 
         st.dataframe(
