@@ -44,17 +44,7 @@ prog["Date"] = pd.to_datetime(
 # =====================================
 
 merged = prog.merge(
-    test = merged[
-    merged["Εντολή"].astype(str) == "449892"
-]
-
-st.subheader("TEST 449892")
-
-st.dataframe(
-    test,
-    use_container_width=True
-)
-
+ 
     erg[
         [
             "Εντολή",
