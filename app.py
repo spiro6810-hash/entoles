@@ -39,5 +39,5 @@ for line in lines:
 df = pd.DataFrame(rows)
 
 st.success(f"Βρέθηκαν {len(df)} ανοιχτές εντολές")
-st.write(df.tail(50))
+st.write(df.tail(200))
 st.dataframe(df, use_container_width=True)
