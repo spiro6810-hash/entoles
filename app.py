@@ -8,7 +8,10 @@ st.title("Ανοιχτές Εντολές από PDF")
 
 rows = []
 
+# ======================
 # Διαβάζουμε το PDF
+# ======================
+
 with pdfplumber.open("data/access_open.pdf") as pdf:
 
     text = ""
@@ -17,7 +20,10 @@ with pdfplumber.open("data/access_open.pdf") as pdf:
         text += page.extract_text() or ""
         text += "\n"
 
+# ======================
 # Ανάλυση γραμμών
+# ======================
+
 lines = text.splitlines()
 
 for line in lines:
@@ -38,20 +44,24 @@ for line in lines:
                 }
             )
 
+# ======================
 # DataFrame
+# ======================
+
 df = pd.DataFrame(rows)
 
-# Μετατροπή ημερομηνιών
 df["Ημερομηνία"] = pd.to_datetime(
     df["Ημερομηνία"],
     dayfirst=True,
     errors="coerce"
 )
 
-# Ενημέρωση
+# ======================
+# Dashboard
+# ======================
+
 st.success(f"Βρέθηκαν {len(df)} ανοιχτές εντολές")
 
-# Επιλογή ημερομηνιών
 col1, col2 = st.columns(2)
 
 with col1:
@@ -66,14 +76,12 @@ with col2:
         value=df["Ημερομηνία"].max().date()
     )
 
-# Φιλτράρισμα
 filtered = df[
     (df["Ημερομηνία"] >= pd.Timestamp(from_date))
     &
     (df["Ημερομηνία"] <= pd.Timestamp(to_date))
 ]
 
-# Μετρητές
 c1, c2, c3 = st.columns(3)
 
 with c1:
@@ -94,7 +102,10 @@ with c3:
         filtered["Ημερομηνία"].max().strftime("%d/%m/%Y")
     )
 
+# ======================
 # Λίστα
+# ======================
+
 filtered_display = filtered.copy()
 
 filtered_display["Ημερομηνία"] = (
@@ -109,37 +120,11 @@ st.dataframe(
     use_container_width=True
 )
 
+# ======================
 # Σύνοψη
+# ======================
+
 summary = (
     filtered.groupby("Ημερομηνία")
     .size()
-    .reset_index(name="Σύνολο Εντολών")
-)
-
-summary["Ημερομηνία"] = (
-    summary["Ημερομηνία"]
-    .dt.strftime("%d/%m/%Y")
-)
-
-st.subheader("Σύνοψη ανά ημερομηνία")
-
-st.dataframe(
-    summary,
-    use_container_width=True
-)
-st.subheader("Έλεγχος PDF")
-
-for line in lines:
-
-    if "448551" in line:
-        st.write(line)
-      st.subheader("Έλεγχος 448551")
-
-for line in lines:
-
-    if "448551" in line:
-        st.write(line)  
-st.subheader("Πρώτες γραμμές PDF")
-
-for line in lines[:300]:
-    st.write(line)
+    .reset
