@@ -39,5 +39,33 @@ for line in lines:
 df = pd.DataFrame(rows)
 
 st.success(f"Βρέθηκαν {len(df)} ανοιχτές εντολές")
-st.write(df.tail(200))
-st.dataframe(df, use_container_width=True)
+
+df["Ημερομηνία"] = pd.to_datetime(
+    df["Ημερομηνία"],
+    dayfirst=True,
+    errors="coerce"
+)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    from_date = st.date_input(
+        "Από",
+        value=df["Ημερομηνία"].min().date()
+    )
+
+with col2:
+    to_date = st.date_input(
+        "Έως",
+        value=df["Ημερομηνία"].max().date()
+    )
+
+filtered = df[
+    (df["Ημερομηνία"] >= pd.Timestamp(from_date))
+    &
+    (df["Ημερομηνία"] <= pd.Timestamp(to_date))
+]
+
+st.write(f"Βρέθηκαν {len(filtered)} εντολές στο διάστημα")
+
+st.dataframe(filtered, use_container_width=True)
