@@ -1,22 +1,26 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Προεργασίες")
+st.set_page_config(page_title="Έλεγχος Εκκρεμών")
 
-st.title("Έλεγχος Προεργασιών")
+st.title("Έλεγχος Εκκρεμών Εντολών")
 
 df = pd.read_excel(
     "data/ΠρογΕργασίες.xlsx",
     engine="openpyxl"
 )
 
-st.success(f"Βρέθηκαν {len(df)} εγγραφές")
+# Δες μόνο εντολές χωρίς περιγραφή εργασίας
+open_df = df[
+    df["WorkDescription"].isna()
+]
+
+st.success(f"Βρέθηκαν {len(open_df)} εγγραφές χωρίς WorkDescription")
 
 cols = [
     "Date",
     "TSection",
     "Location",
-    "WorkDescription",
     "Εντολή",
     "Υπεύθυνος Βάρδιας",
     "Ακύρωση",
@@ -24,6 +28,6 @@ cols = [
 ]
 
 st.dataframe(
-    df[cols].head(100),
+    open_df[cols],
     use_container_width=True
 )
