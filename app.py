@@ -44,11 +44,9 @@ prog["Date"] = pd.to_datetime(
 # =====================================
 
 merged = prog.merge(
- 
     erg[
         [
             "Εντολή",
-            "Εργασία",
             "Ώρες",
             "Άτομα"
         ]
@@ -57,16 +55,6 @@ merged = prog.merge(
     how="left"
 )
 
-test = merged[
-    merged["Εντολή"].astype(str).str.strip() == "449892"
-]
-
-st.subheader("TEST 449892")
-
-st.dataframe(
-    test,
-    use_container_width=True
-)
 # =====================================
 # ΚΕΝΕΣ ΕΝΤΟΛΕΣ
 # =====================================
@@ -80,7 +68,7 @@ open_orders = merged[
 ].copy()
 
 # =====================================
-# ΦΙΛΤΡΟ ΗΜΕΡΟΜΗΝΙΑΣ
+# ΦΙΛΤΡΑ ΗΜΕΡΟΜΗΝΙΑΣ
 # =====================================
 
 col1, col2 = st.columns(2)
@@ -120,7 +108,7 @@ open_orders["Έδρα"] = (
 )
 
 # =====================================
-# ΚΑΘΑΡΙΣΜΟΣ ΕΝΤΟΛΗΣ
+# ΜΟΡΦΟΠΟΙΗΣΗ ΕΝΤΟΛΗΣ
 # =====================================
 
 open_orders["Εντολή"] = (
@@ -132,6 +120,32 @@ open_orders["Εντολή"] = (
     .astype(int)
     .astype(str)
 )
+
+# =====================================
+# ΑΝΑΖΗΤΗΣΗ
+# =====================================
+
+st.subheader("Αναζήτηση Εντολής")
+
+search_order = st.text_input(
+    "Γράψε αριθμό εντολής"
+)
+
+if search_order:
+
+    result = open_orders[
+        open_orders["Εντολή"]
+        .astype(str)
+        .str.contains(
+            search_order,
+            na=False
+        )
+    ]
+
+    st.dataframe(
+        result,
+        use_container_width=True
+    )
 
 # =====================================
 # ΣΥΝΟΛΑ
@@ -174,32 +188,6 @@ with c3:
     )
 
 # =====================================
-# ΑΝΑΖΗΤΗΣΗ
-# =====================================
-
-st.subheader("Αναζήτηση Εντολής")
-
-search_order = st.text_input(
-    "Γράψε αριθμό εντολής"
-)
-
-if search_order:
-
-    result = open_orders[
-        open_orders["Εντολή"]
-        .astype(str)
-        .str.contains(
-            search_order,
-            na=False
-        )
-    ]
-
-    st.dataframe(
-        result,
-        use_container_width=True
-    )
-
-# =====================================
 # REPORT
 # =====================================
 
@@ -232,7 +220,7 @@ for area in [
                     "Εντολή"
                 ]
             ].sort_values(
-                ["Date"]
+                "Date"
             ),
             use_container_width=True
         )
@@ -247,6 +235,8 @@ with pd.ExcelWriter(
     output,
     engine="openpyxl"
 ) as writer:
+
+    # Σύνοψη
 
     summary_df = pd.DataFrame({
         "Τμήμα": [
@@ -283,6 +273,8 @@ with pd.ExcelWriter(
         sheet_name="Σύνοψη",
         index=False
     )
+
+    # Αναλυτικά φύλλα
 
     for area in [
         "Γραμμή 1",
