@@ -67,6 +67,16 @@ st.dataframe(
     how="left"
 )
 
+test = merged[
+    merged["Εντολή"].astype(str).str.strip() == "449892"
+]
+
+st.subheader("TEST 449892")
+
+st.dataframe(
+    test,
+    use_container_width=True
+)
 # =====================================
 # ΚΕΝΕΣ ΕΝΤΟΛΕΣ
 # =====================================
