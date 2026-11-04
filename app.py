@@ -169,8 +169,31 @@ found = False
 
 for line in lines:
     if "448551" in line:
-        st.write(line)
+        st.write(line) 
         found = True
 
 if not found:
     st.write("Δεν βρέθηκε η 448551 μέσα στο κείμενο του PDF")
+    # ======================
+# Σύνοψη ανά μήνα
+# ======================
+
+month_summary = filtered.copy()
+
+month_summary["Μήνας"] = (
+    month_summary["Ημερομηνία"]
+    .dt.strftime("%m/%Y")
+)
+
+month_summary = (
+    month_summary.groupby("Μήνας")
+    .size()
+    .reset_index(name="Σύνολο Εντολών")
+)
+
+st.subheader("Σύνοψη ανά μήνα")
+
+st.dataframe(
+    month_summary,
+    use_container_width=True
+)
