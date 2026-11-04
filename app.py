@@ -236,9 +236,9 @@ for area in ["Γραμμή 1", "Σεπόλια", "Ελληνικό"]:
             use_container_width=True
         )
 
-# ==================================================
+# =====================================
 # EXCEL EXPORT
-# ==================================================
+# =====================================
 
 output = io.BytesIO()
 
@@ -246,6 +246,50 @@ with pd.ExcelWriter(
     output,
     engine="openpyxl"
 ) as writer:
+
+    # ------------------------
+    # ΣΥΝΟΨΗ
+    # ------------------------
+
+    summary_df = pd.DataFrame({
+        "Τμήμα": [
+            "Γραμμή 1",
+            "Σεπόλια",
+            "Ελληνικό"
+        ],
+        "Σύνολο": [
+            len(
+                report_df[
+                    report_df["Έδρα"] == "Γραμμή 1"
+                ]
+            ),
+            len(
+                report_df[
+                    report_df["Έδρα"] == "Σεπόλια"
+                ]
+            ),
+            len(
+                report_df[
+                    report_df["Έδρα"] == "Ελληνικό"
+                ]
+            )
+        ]
+    })
+
+    summary_df.loc[len(summary_df)] = [
+        "ΓΕΝΙΚΟ ΣΥΝΟΛΟ",
+        summary_df["Σύνολο"].sum()
+    ]
+
+    summary_df.to_excel(
+        writer,
+        sheet_name="Σύνοψη",
+        index=False
+    )
+
+    # ------------------------
+    # Αναλυτικά φύλλα
+    # ------------------------
 
     for area in [
         "Γραμμή 1",
@@ -256,7 +300,11 @@ with pd.ExcelWriter(
         section = report_df[
             report_df["Έδρα"] == area
         ][
-            ["Date", "Βάρδια", "Εντολή"]
+            [
+                "Date",
+                "Βάρδια",
+                "Εντολή"
+            ]
         ].copy()
 
         summary_row = pd.DataFrame({
