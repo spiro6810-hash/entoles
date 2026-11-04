@@ -52,6 +52,7 @@ def parse_access_line(line: str) -> dict | None:
     if not ORDER_RE.match(tokens[1]):
         return None
     # shift
+if len(tokens) > 2:
     if not SHIFT_RE.match(tokens[2]):
         return None
 
