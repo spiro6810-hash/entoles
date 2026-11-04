@@ -27,13 +27,6 @@ erg = pd.read_excel(
 )
 
 # ==================================================
-# ΕΜΦΑΝΙΣΗ ΣΤΗΛΩΝ
-# ==================================================
-
-st.subheader("Όλες οι στήλες του ΠρογΕργασίες")
-st.write(prog.columns.tolist())
-
-# ==================================================
 # ΚΑΘΑΡΙΣΜΟΣ
 # ==================================================
 
@@ -102,7 +95,7 @@ open_orders["Γραμμή"] = (
 )
 
 # ==================================================
-# ΒΑΡΔΙΑ ΑΠΟ START
+# ΒΑΡΔΙΑ
 # ==================================================
 
 def get_shift(value):
@@ -178,68 +171,53 @@ with c4:
     )
 
 # ==================================================
-# ΣΥΝΟΛΟ ΑΝΑ ΓΡΑΜΜΗ
+# ΟΝΟΜΑΣΙΕΣ ΓΡΑΜΜΩΝ
 # ==================================================
 
-line_summary = (
-    open_orders.groupby("Γραμμή")
-    .size()
-    .reset_index(name="Σύνολο")
-)
+line_names = {
+    "1": "Γραμμή 1",
+    "2": "Σεπόλια",
+    "3": "Ελληνικό",
+    "S": "Τραμ"
+}
 
-st.subheader("Σύνολο ανά Γραμμή")
-
-st.dataframe(
-    line_summary,
-    use_container_width=True
-)
-
-# ==================================================
-# ΣΥΝΟΛΟ ΑΝΑ TSECTION
-# ==================================================
-
-section_summary = (
-    open_orders.groupby("TSection")
-    .size()
-    .reset_index(name="Σύνολο")
-    .sort_values("Σύνολο", ascending=False)
-)
-
-st.subheader("Σύνολο ανά TSection")
-
-st.dataframe(
-    section_summary,
-    use_container_width=True
+open_orders["Έδρα"] = (
+    open_orders["Γραμμή"]
+    .map(line_names)
 )
 
 # ==================================================
-# ΛΙΣΤΑ ΚΕΝΩΝ ΕΝΤΟΛΩΝ
+# ΑΝΑΛΥΤΙΚΗ ΑΝΑΦΟΡΑ
 # ==================================================
 
-show_cols = [
+report_df = open_orders.copy()
+
+report_df["Date"] = pd.to_datetime(
+    report_df["Date"]
+).dt.strftime("%d/%m/%Y")
+
+report_cols = [
     "Date",
     "Βάρδια",
-    "TSection",
-    "Location",
-    "WorkDescription",
     "Εντολή"
 ]
 
-show_cols = [
-    c for c in show_cols
-    if c in open_orders.columns
-]
+for code, title in line_names.items():
 
-st.subheader("Λίστα Κενών Εντολών")
+    section = report_df[
+        report_df["Έδρα"] == title
+    ].copy()
 
-display_df = open_orders[show_cols].copy()
+    st.subheader(
+        f"{title} - Σύνολο {len(section)}"
+    )
 
-display_df["Date"] = (
-    pd.to_datetime(display_df["Date"])
-    .dt.strftime("%d/%m/%Y")
-)
+    if len(section) > 0:
 
-st.dataframe(
-    display_df.sort_values(["Date", "Βάρδια"]),
-    use_container_width=True
-)
+        st.dataframe(
+            section[report_cols]
+            .sort_values(
+                ["Date", "Βάρδια"]
+            ),
+            use_container_width=True
+        )
