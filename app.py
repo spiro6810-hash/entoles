@@ -193,6 +193,25 @@ with c3:
 
 report_df = open_orders.copy()
 st.subheader("Αναζήτηση Εντολής")
+test_order = "449892"
+
+st.subheader("Έλεγχος 449892 στις ΠρογΕργασίες")
+
+st.dataframe(
+    prog[
+        prog["Εντολή"].astype(str) == test_order
+    ],
+    use_container_width=True
+)
+
+st.subheader("Έλεγχος 449892 στις Εργασίες Βάρδιας")
+
+st.dataframe(
+    erg[
+        erg["Εντολή"].astype(str) == test_order
+    ],
+    use_container_width=True
+)
 
 search_order = st.text_input(
     "Γράψε αριθμό εντολής"
