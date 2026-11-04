@@ -39,13 +39,7 @@ for line in lines:
 df = pd.DataFrame(rows)
 
 st.success(f"Βρέθηκαν {len(df)} ανοιχτές εντολές")
-c1, c2, c3 = st.columns(3)
 
-with c1:
-    st.metric(
-        "Ανοιχτές Εντολές",
-        len(filtered)
-    )
 
 with c2:
     st.metric(
