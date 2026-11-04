@@ -5,6 +5,10 @@ st.set_page_config(page_title="Προεργασίες")
 
 st.title("Έλεγχος Προεργασιών")
 
+# ======================
+# Διάβασμα Excel
+# ======================
+
 df = pd.read_excel(
     "data/ΠρογΕργασίες.xlsx",
     engine="openpyxl"
@@ -12,11 +16,30 @@ df = pd.read_excel(
 
 st.success(f"Βρέθηκαν {len(df)} εγγραφές")
 
-st.write("Στήλες αρχείου:")
+# ======================
+# Στήλες αρχείου
+# ======================
+
+st.subheader("Στήλες αρχείου")
 
 st.write(df.columns.tolist())
 
+# ======================
+# Έλεγχος βασικών πεδίων
+# ======================
+
+st.subheader("Έλεγχος βασικών πεδίων")
+
+cols = [
+    "Date",
+    "TSection",
+    "Εντολή",
+    "Υπεύθυνος Βάρδιας",
+    "Ακύρωση",
+    "Άκυρη"
+]
+
 st.dataframe(
-    df.head(20),
+    df[cols].head(50),
     use_container_width=True
 )
