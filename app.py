@@ -6,11 +6,11 @@ st.set_page_config(page_title="Ανοιχτές Εντολές")
 
 st.title("Ανοιχτές Εντολές από PDF")
 
-rows = []
-
 # ======================
 # Διαβάζουμε το PDF
 # ======================
+
+rows = []
 
 with pdfplumber.open("data/access_open.pdf") as pdf:
 
@@ -127,4 +127,33 @@ st.dataframe(
 summary = (
     filtered.groupby("Ημερομηνία")
     .size()
-    .reset
+    .reset_index(name="Σύνολο Εντολών")
+)
+
+summary["Ημερομηνία"] = (
+    summary["Ημερομηνία"]
+    .dt.strftime("%d/%m/%Y")
+)
+
+st.subheader("Σύνοψη ανά ημερομηνία")
+
+st.dataframe(
+    summary,
+    use_container_width=True
+)
+
+# ======================
+# Έλεγχος 448551
+# ======================
+
+st.subheader("Έλεγχος 448551")
+
+found = False
+
+for line in lines:
+    if "448551" in line:
+        st.write(line)
+        found = True
+
+if not found:
+    st.write("Δεν βρέθηκε η 448551 μέσα στο κείμενο του PDF")
