@@ -86,7 +86,7 @@ open_orders = open_orders[
 ]
 
 # =====================================
-# ΒΑΡΔΙΑ ΑΠΟ ΩΡΑ ΕΝΑΡΞΗΣ
+# ΒΑΡΔΙΑ
 # =====================================
 
 def get_shift(value):
@@ -105,27 +105,21 @@ def get_shift(value):
     if value.startswith("22"):
         return "3"
 
-    if value.startswith("00"):
-        return "3"
-
-    if value.startswith("01"):
-        return "3"
-
-    if value.startswith("02"):
-        return "3"
-
-    if value.startswith("03"):
-        return "3"
-
-    if value.startswith("04"):
-        return "3"
-
-    if value.startswith("05"):
+    if (
+        value.startswith("00")
+        or value.startswith("01")
+        or value.startswith("02")
+        or value.startswith("03")
+        or value.startswith("04")
+        or value.startswith("05")
+    ):
         return "3"
 
     return ""
 
-open_orders["Βάρδια"] = open_orders["Start"].apply(get_shift)
+open_orders["Βάρδια"] = open_orders["Start"].apply(
+    get_shift
+)
 
 # =====================================
 # ΕΔΡΑ
@@ -193,6 +187,16 @@ report_df["Date"] = pd.to_datetime(
     report_df["Date"]
 ).dt.strftime("%d/%m/%Y")
 
+report_df["Εντολή"] = (
+    pd.to_numeric(
+        report_df["Εντολή"],
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
+    .astype(str)
+)
+
 for area in [
     "Γραμμή 1",
     "Σεπόλια",
@@ -221,6 +225,7 @@ for area in [
             ),
             use_container_width=True
         )
+
 # =====================================
 # ΕΞΑΓΩΓΗ EXCEL
 # =====================================
@@ -241,7 +246,11 @@ with pd.ExcelWriter(
         section = report_df[
             report_df["Έδρα"] == area
         ][
-            ["Date", "Βάρδια", "Εντολή"]
+            [
+                "Date",
+                "Βάρδια",
+                "Εντολή"
+            ]
         ].copy()
 
         summary_row = pd.DataFrame({
@@ -255,7 +264,9 @@ with pd.ExcelWriter(
             ignore_index=True
         )
 
-        sheet_name = area.replace(" ", "")
+        sheet_name = (
+            area.replace(" ", "")
+        )
 
         export_df.to_excel(
             writer,
