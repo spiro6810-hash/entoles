@@ -1,9 +1,13 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Έλεγχος Excel")
+st.set_page_config(page_title="Εκκρεμείς Εντολές")
 
-st.title("Έλεγχος BAAN και Εργασιών Βάρδιας")
+st.title("Εκκρεμείς Εντολές BAAN")
+
+# =====================
+# Φόρτωση αρχείων
+# =====================
 
 baan = pd.read_excel(
     "data/New Microsoft Excel Worksheet.xlsx",
@@ -15,24 +19,45 @@ erg = pd.read_excel(
     engine="openpyxl"
 )
 
-st.subheader("Στήλες BAAN")
+# =====================
+# Καθαρισμός εντολών
+# =====================
 
-st.write(baan.columns.tolist())
+baan["Εντολή"] = baan["Εντολή"].astype(str).str.strip()
+erg["Εντολή"] = erg["Εντολή"].astype(str).str.strip()
 
-st.subheader("Στήλες Εργασιών Βάρδιας")
+# =====================
+# Εκκρεμείς = υπάρχουν στο BAAN
+# αλλά όχι στις Εργασίες Βάρδιας
+# =====================
 
-st.write(erg.columns.tolist())
+open_orders = baan[
+    ~baan["Εντολή"].isin(erg["Εντολή"])
+]
 
-st.subheader("Πρώτες 10 γραμμές BAAN")
-
-st.dataframe(
-    baan.head(10),
-    use_container_width=True
+st.success(
+    f"Βρέθηκαν {len(open_orders)} εκκρεμείς εντολές"
 )
 
-st.subheader("Πρώτες 10 γραμμές Εργασιών Βάρδιας")
+# =====================
+# Εμφάνιση
+# =====================
+
+cols = [
+    "Ημ/νία",
+    "Τμήμα",
+    "Εγκατάσταση",
+    "Περιγραφή εργασίας",
+    "Υπεύθυνος",
+    "Εντολή"
+]
+
+available_cols = [
+    c for c in cols
+    if c in open_orders.columns
+]
 
 st.dataframe(
-    erg.head(10),
+    open_orders[available_cols],
     use_container_width=True
 )
