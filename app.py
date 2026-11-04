@@ -87,6 +87,24 @@ open_orders = open_orders[
 st.success(
     f"Βρέθηκαν {len(open_orders)} κενές εντολές"
 )
+open_orders["Γραμμή"] = (
+    open_orders["TSection"]
+    .astype(str)
+    .str[0]
+)
+
+line_summary = (
+    open_orders.groupby("Γραμμή")
+    .size()
+    .reset_index(name="Σύνολο")
+)
+
+st.subheader("Σύνολο ανά Γραμμή")
+
+st.dataframe(
+    line_summary,
+    use_container_width=True
+)
 
 # =====================================
 # Σύνολο ανά TSection
