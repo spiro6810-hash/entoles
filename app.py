@@ -192,6 +192,26 @@ with c3:
 # ==================================================
 
 report_df = open_orders.copy()
+st.subheader("Αναζήτηση Εντολής")
+
+search_order = st.text_input(
+    "Γράψε αριθμό εντολής"
+)
+
+if search_order:
+
+    result = report_df[
+        report_df["Εντολή"].astype(str)
+        .str.contains(
+            search_order,
+            na=False
+        )
+    ]
+
+    st.dataframe(
+        result,
+        use_container_width=True
+    )
 
 report_df["Date"] = pd.to_datetime(
     report_df["Date"]
