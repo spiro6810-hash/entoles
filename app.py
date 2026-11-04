@@ -5,6 +5,10 @@ import pandas as pd
 st.set_page_config(page_title="Ανοιχτές Εντολές")
 
 st.title("Ανοιχτές Εντολές από PDF")
+show_text = st.checkbox("Εμφάνιση κειμένου PDF")
+
+if show_text:
+    st.text(text[:30000])
 
 # =====================
 # Διάβασμα PDF
@@ -19,7 +23,10 @@ with pdfplumber.open("data/access_open.pdf") as pdf:
     for page in pdf.pages:
         text += page.extract_text() or ""
         text += "\n"
+show_text = st.checkbox("Εμφάνιση κειμένου PDF")
 
+if show_text:
+    st.text(text[:30000])
 lines = text.splitlines()
 
 for line in lines:
