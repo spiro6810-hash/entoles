@@ -1,7 +1,7 @@
 import pdfplumber
 import streamlit as st
 import pandas as pd
-
+import io
 st.set_page_config(page_title="Ανοιχτές Εντολές")
 
 st.title("Ανοιχτές Εντολές από PDF")
@@ -118,6 +118,23 @@ st.subheader("Λίστα Ανοιχτών Εντολών")
 st.dataframe(
     filtered_display,
     use_container_width=True
+)
+output = io.BytesIO()
+
+with pd.ExcelWriter(output, engine="openpyxl") as writer:
+    filtered_display.to_excel(
+        writer,
+        sheet_name="Εκκρεμείς Εντολές",
+        index=False
+    )
+
+excel_data = output.getvalue()
+
+st.download_button(
+    label="⬇️ Κατέβασε Excel",
+    data=excel_data,
+    file_name="ekkremeis_entoles.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
 # ======================
