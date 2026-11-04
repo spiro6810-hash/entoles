@@ -5,17 +5,10 @@ import pandas as pd
 st.set_page_config(page_title="Ανοιχτές Εντολές")
 
 st.title("Ανοιχτές Εντολές από PDF")
-show_text = st.checkbox("Εμφάνιση κειμένου PDF")
-
-if show_text:
-    st.text(text[:30000])
-
-# =====================
-# Διάβασμα PDF
-# =====================
 
 rows = []
 
+# Διαβάζουμε το PDF
 with pdfplumber.open("data/access_open.pdf") as pdf:
 
     text = ""
@@ -23,18 +16,8 @@ with pdfplumber.open("data/access_open.pdf") as pdf:
     for page in pdf.pages:
         text += page.extract_text() or ""
         text += "\n"
-        show_text = st.checkbox("Εμφάνιση κειμένου PDF")
 
-if show_text:
-    st.text_area(
-        "Κείμενο PDF",
-        text[:30000],
-        height=600
-    )
-show_text = st.checkbox("Εμφάνιση κειμένου PDF")
-
-if show_text:
-    st.text(text[:30000])
+# Ανάλυση γραμμών
 lines = text.splitlines()
 
 for line in lines:
@@ -55,28 +38,20 @@ for line in lines:
                 }
             )
 
+# DataFrame
 df = pd.DataFrame(rows)
 
-# =====================
-# Μετατροπή ημερομηνίας
-# =====================
-
+# Μετατροπή ημερομηνιών
 df["Ημερομηνία"] = pd.to_datetime(
     df["Ημερομηνία"],
     dayfirst=True,
     errors="coerce"
 )
 
-# =====================
-# Σύνολο
-# =====================
-
+# Ενημέρωση
 st.success(f"Βρέθηκαν {len(df)} ανοιχτές εντολές")
 
-# =====================
-# Φίλτρα ημερομηνίας
-# =====================
-
+# Επιλογή ημερομηνιών
 col1, col2 = st.columns(2)
 
 with col1:
@@ -91,16 +66,14 @@ with col2:
         value=df["Ημερομηνία"].max().date()
     )
 
+# Φιλτράρισμα
 filtered = df[
     (df["Ημερομηνία"] >= pd.Timestamp(from_date))
     &
     (df["Ημερομηνία"] <= pd.Timestamp(to_date))
 ]
 
-# =====================
-# Dashboard
-# =====================
-
+# Μετρητές
 c1, c2, c3 = st.columns(3)
 
 with c1:
@@ -121,10 +94,7 @@ with c3:
         filtered["Ημερομηνία"].max().strftime("%d/%m/%Y")
     )
 
-# =====================
-# Λίστα εντολών
-# =====================
-
+# Λίστα
 filtered_display = filtered.copy()
 
 filtered_display["Ημερομηνία"] = (
@@ -139,10 +109,7 @@ st.dataframe(
     use_container_width=True
 )
 
-# =====================
-# Σύνοψη ανά ημερομηνία
-# =====================
-
+# Σύνοψη
 summary = (
     filtered.groupby("Ημερομηνία")
     .size()
