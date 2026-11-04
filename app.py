@@ -48,10 +48,34 @@ open_orders = merged[
     (merged["Άτομα"].isna())
 ]
 
+open_orders["Date"] = pd.to_datetime(
+    open_orders["Date"],
+    errors="coerce"
+)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    from_date = st.date_input(
+        "Από",
+        value=open_orders["Date"].min().date()
+    )
+
+with col2:
+    to_date = st.date_input(
+        "Έως",
+        value=open_orders["Date"].max().date()
+    )
+
+open_orders = open_orders[
+    (open_orders["Date"] >= pd.Timestamp(from_date))
+    &
+    (open_orders["Date"] <= pd.Timestamp(to_date))
+]
+
 st.success(
     f"Βρέθηκαν {len(open_orders)} κενές εντολές"
 )
-
 # -----------------------------
 # Εμφάνιση
 # -----------------------------
