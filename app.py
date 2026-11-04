@@ -32,21 +32,33 @@ access_query = pd.read_excel(
 # =====================================
 
 prog["Εντολή"] = (
-    prog["Εντολή"]
+    pd.to_numeric(
+        prog["Εντολή"],
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
     .astype(str)
-    .str.strip()
 )
 
 erg["Εντολή"] = (
-    erg["Εντολή"]
+    pd.to_numeric(
+        erg["Εντολή"],
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
     .astype(str)
-    .str.strip()
 )
 
 access_query["Εντολή"] = (
-    access_query["Εντολή"]
+    pd.to_numeric(
+        access_query["Εντολή"],
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
     .astype(str)
-    .str.strip()
 )
 
 # =====================================
