@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 
+# ==================================================
+# ΡΥΘΜΙΣΕΙΣ
+# ==================================================
+
 st.set_page_config(
     page_title="Κενές Εντολές",
     layout="wide"
@@ -27,7 +31,6 @@ erg = pd.read_excel(
 # ==================================================
 
 st.subheader("Όλες οι στήλες του ΠρογΕργασίες")
-
 st.write(prog.columns.tolist())
 
 # ==================================================
@@ -99,6 +102,48 @@ open_orders["Γραμμή"] = (
 )
 
 # ==================================================
+# ΒΑΡΔΙΑ ΑΠΟ START
+# ==================================================
+
+def get_shift(value):
+
+    if pd.isna(value):
+        return ""
+
+    value = str(value)
+
+    if value.startswith("06"):
+        return "1"
+
+    if value.startswith("14"):
+        return "2"
+
+    if value.startswith("22"):
+        return "3"
+
+    if value.startswith("00"):
+        return "3"
+
+    if value.startswith("01"):
+        return "3"
+
+    if value.startswith("02"):
+        return "3"
+
+    if value.startswith("03"):
+        return "3"
+
+    if value.startswith("04"):
+        return "3"
+
+    if value.startswith("05"):
+        return "3"
+
+    return ""
+
+open_orders["Βάρδια"] = open_orders["Start"].apply(get_shift)
+
+# ==================================================
 # ΜΕΤΡΗΤΕΣ
 # ==================================================
 
@@ -133,11 +178,47 @@ with c4:
     )
 
 # ==================================================
-# ΛΙΣΤΑ
+# ΣΥΝΟΛΟ ΑΝΑ ΓΡΑΜΜΗ
+# ==================================================
+
+line_summary = (
+    open_orders.groupby("Γραμμή")
+    .size()
+    .reset_index(name="Σύνολο")
+)
+
+st.subheader("Σύνολο ανά Γραμμή")
+
+st.dataframe(
+    line_summary,
+    use_container_width=True
+)
+
+# ==================================================
+# ΣΥΝΟΛΟ ΑΝΑ TSECTION
+# ==================================================
+
+section_summary = (
+    open_orders.groupby("TSection")
+    .size()
+    .reset_index(name="Σύνολο")
+    .sort_values("Σύνολο", ascending=False)
+)
+
+st.subheader("Σύνολο ανά TSection")
+
+st.dataframe(
+    section_summary,
+    use_container_width=True
+)
+
+# ==================================================
+# ΛΙΣΤΑ ΚΕΝΩΝ ΕΝΤΟΛΩΝ
 # ==================================================
 
 show_cols = [
     "Date",
+    "Βάρδια",
     "TSection",
     "Location",
     "WorkDescription",
@@ -159,19 +240,6 @@ display_df["Date"] = (
 )
 
 st.dataframe(
-    display_df,
-    use_container_width=True
-)
-st.subheader("Έλεγχος Βάρδιας")
-
-st.dataframe(
-    prog[
-        [
-            "Date",
-            "Start",
-            "End",
-            "Εντολή"
-        ]
-    ].head(50),
+    display_df.sort_values(["Date", "Βάρδια"]),
     use_container_width=True
 )
