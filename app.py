@@ -42,7 +42,7 @@ def parse_access_line(line: str) -> dict | None:
         return None
 
     tokens = line.split()
-    if len(tokens) < 4:
+    if len(tokens) < 2:
         return None
 
     # date
