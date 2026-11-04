@@ -127,6 +127,12 @@ st.dataframe(
     summary,
     use_container_width=True
 )
+st.subheader("Έλεγχος PDF")
+
+for line in lines:
+
+    if "448551" in line:
+        st.write(line)
 st.subheader("Πρώτες γραμμές PDF")
 
 for line in lines[:300]:
