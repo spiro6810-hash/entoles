@@ -76,6 +76,7 @@ summary = (
     .size()
     .reset_index(name="Σύνολο Εντολών")
 )
+summary["Ημερομηνία"] = summary["Ημερομηνία"].dt.strftime("%d/%m/%Y")
 
 st.dataframe(
     summary.sort_values("Ημερομηνία"),
