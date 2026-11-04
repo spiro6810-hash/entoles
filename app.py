@@ -221,43 +221,47 @@ for area in [
             ),
             use_container_width=True
         )
-        # =====================================
+# =====================================
 # ΕΞΑΓΩΓΗ EXCEL
 # =====================================
 
 output = io.BytesIO()
 
-with pd.ExcelWriter(output, engine="openpyxl") as writer:
+with pd.ExcelWriter(
+    output,
+    engine="openpyxl"
+) as writer:
 
-    report_df[
-        report_df["Έδρα"] == "Γραμμή 1"
-    ][
-        ["Date", "Βάρδια", "Εντολή"]
-    ].to_excel(
-        writer,
-        sheet_name="Γραμμή1",
-        index=False
-    )
+    for area in [
+        "Γραμμή 1",
+        "Σεπόλια",
+        "Ελληνικό"
+    ]:
 
-    report_df[
-        report_df["Έδρα"] == "Σεπόλια"
-    ][
-        ["Date", "Βάρδια", "Εντολή"]
-    ].to_excel(
-        writer,
-        sheet_name="Σεπόλια",
-        index=False
-    )
+        section = report_df[
+            report_df["Έδρα"] == area
+        ][
+            ["Date", "Βάρδια", "Εντολή"]
+        ].copy()
 
-    report_df[
-        report_df["Έδρα"] == "Ελληνικό"
-    ][
-        ["Date", "Βάρδια", "Εντολή"]
-    ].to_excel(
-        writer,
-        sheet_name="Ελληνικό",
-        index=False
-    )
+        summary_row = pd.DataFrame({
+            "Date": [f"ΣΥΝΟΛΟ: {len(section)}"],
+            "Βάρδια": [""],
+            "Εντολή": [""]
+        })
+
+        export_df = pd.concat(
+            [summary_row, section],
+            ignore_index=True
+        )
+
+        sheet_name = area.replace(" ", "")
+
+        export_df.to_excel(
+            writer,
+            sheet_name=sheet_name,
+            index=False
+        )
 
 excel_data = output.getvalue()
 
