@@ -87,6 +87,49 @@ open_orders = open_orders[
 st.success(
     f"Βρέθηκαν {len(open_orders)} κενές εντολές"
 )
+line_map = {
+    "1": "Γραμμή 1",
+    "2": "Σεπόλια",
+    "3": "Ελληνικό",
+    "S": "Τραμ"
+}
+
+open_orders["Γραμμή"] = (
+    open_orders["TSection"]
+    .astype(str)
+    .str[0]
+)
+
+open_orders["Έδρα"] = (
+    open_orders["Γραμμή"]
+    .map(line_map)
+)
+
+c1, c2, c3, c4 = st.columns(4)
+
+with c1:
+    st.metric(
+        "Γραμμή 1",
+        len(open_orders[open_orders["Γραμμή"] == "1"])
+    )
+
+with c2:
+    st.metric(
+        "Σεπόλια",
+        len(open_orders[open_orders["Γραμμή"] == "2"])
+    )
+
+with c3:
+    st.metric(
+        "Ελληνικό",
+        len(open_orders[open_orders["Γραμμή"] == "3"])
+    )
+
+with c4:
+    st.metric(
+        "Τραμ",
+        len(open_orders[open_orders["Γραμμή"] == "S"])
+    )
 open_orders["Γραμμή"] = (
     open_orders["TSection"]
     .astype(str)
