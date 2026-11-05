@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import io
 
+# =====================================
+# ΡΥΘΜΙΣΕΙΣ
+# =====================================
+
 st.set_page_config(
     page_title="Κενές Εντολές",
     layout="wide"
@@ -10,12 +14,41 @@ st.set_page_config(
 st.title("Κενές Εντολές Access")
 
 # =====================================
-# ΦΟΡΤΩΣΗ ACCESS QUERY
+# ΦΟΡΤΩΣΗ EXCEL
 # =====================================
 
 df = pd.read_excel(
     "data/Κενές εντολές.xlsx",
     engine="openpyxl"
+)
+
+prog = pd.read_excel(
+    "data/ΠρογΕργασίες.xlsx",
+    engine="openpyxl"
+)
+
+# =====================================
+# ΚΑΘΑΡΙΣΜΟΣ ΕΝΤΟΛΩΝ
+# =====================================
+
+df["Εντολή"] = (
+    pd.to_numeric(
+        df["Εντολή"],
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
+    .astype(str)
+)
+
+prog["Εντολή"] = (
+    pd.to_numeric(
+        prog["Εντολή"],
+        errors="coerce"
+    )
+    .fillna(0)
+    .astype(int)
+    .astype(str)
 )
 
 # =====================================
@@ -25,6 +58,45 @@ df = pd.read_excel(
 df["Date"] = pd.to_datetime(
     df["Date"],
     errors="coerce"
+)
+
+# =====================================
+# ΠΡΟΣΘΗΚΗ START
+# =====================================
+
+df = df.merge(
+    prog[
+        [
+            "Εντολή",
+            "Start"
+        ]
+    ],
+    on="Εντολή",
+    how="left"
+)
+
+# =====================================
+# ΒΑΡΔΙΑ
+# =====================================
+
+def get_shift(value):
+
+    if pd.isna(value):
+        return ""
+
+    value = str(value)
+
+    if value.startswith("06"):
+        return "1"
+
+    if value.startswith("14"):
+        return "2"
+
+    return "3"
+
+
+df["Βάρδια"] = df["Start"].apply(
+    get_shift
 )
 
 # =====================================
@@ -44,7 +116,7 @@ df["Έδρα"] = (
 )
 
 # =====================================
-# ΦΙΛΤΡΑ
+# ΦΙΛΤΡΑ ΗΜΕΡΟΜΗΝΙΑΣ
 # =====================================
 
 col1, col2 = st.columns(2)
@@ -80,19 +152,31 @@ c1, c2, c3 = st.columns(3)
 with c1:
     st.metric(
         "Γραμμή 1",
-        len(df[df["Έδρα"] == "Γραμμή 1"])
+        len(
+            df[
+                df["Έδρα"] == "Γραμμή 1"
+            ]
+        )
     )
 
 with c2:
     st.metric(
         "Σεπόλια",
-        len(df[df["Έδρα"] == "Σεπόλια"])
+        len(
+            df[
+                df["Έδρα"] == "Σεπόλια"
+            ]
+        )
     )
 
 with c3:
     st.metric(
         "Ελληνικό",
-        len(df[df["Έδρα"] == "Ελληνικό"])
+        len(
+            df[
+                df["Έδρα"] == "Ελληνικό"
+            ]
+        )
     )
 
 # =====================================
@@ -122,7 +206,7 @@ if search_order:
     )
 
 # =====================================
-# ΑΝΑΦΟΡΑ
+# REPORT
 # =====================================
 
 report_df = df.copy()
@@ -150,13 +234,30 @@ for area in [
 
     if len(section) > 0:
 
+        shift_summary = (
+            section.groupby("Βάρδια")
+            .size()
+            .reset_index(name="Σύνολο")
+            .sort_values("Βάρδια")
+        )
+
+        st.write("Ανά Βάρδια")
+
+        st.dataframe(
+            shift_summary,
+            use_container_width=True
+        )
+
         st.dataframe(
             section[
                 [
                     "Date",
+                    "Βάρδια",
                     "Εντολή"
                 ]
-            ],
+            ].sort_values(
+                ["Date", "Βάρδια"]
+            ),
             use_container_width=True
         )
 
@@ -218,13 +319,27 @@ with pd.ExcelWriter(
         ][
             [
                 "Date",
+                "Βάρδια",
                 "Εντολή"
             ]
-        ]
+        ].copy()
 
-        section.to_excel(
+        summary_row = pd.DataFrame({
+            "Date": [f"ΣΥΝΟΛΟ: {len(section)}"],
+            "Βάρδια": [""],
+            "Εντολή": [""]
+        })
+
+        export_df = pd.concat(
+            [summary_row, section],
+            ignore_index=True
+        )
+
+        sheet_name = area.replace(" ", "")
+
+        export_df.to_excel(
             writer,
-            sheet_name=area.replace(" ", ""),
+            sheet_name=sheet_name,
             index=False
         )
 
