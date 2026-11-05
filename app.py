@@ -7,7 +7,7 @@ import io
 # =====================================
 
 st.set_page_config(
-    page_title="Κενές Εντολές",
+    page_title="Αναφορά Κενών Εντολών",
     layout="wide"
 )
 
@@ -23,13 +23,17 @@ df = pd.read_excel(
 )
 
 # =====================================
-# ΜΟΡΦΟΠΟΙΗΣΗ
+# ΗΜΕΡΟΜΗΝΙΑ
 # =====================================
 
 df["Date"] = pd.to_datetime(
     df["Date"],
     errors="coerce"
 )
+
+# =====================================
+# ΕΝΤΟΛΗ
+# =====================================
 
 df["Εντολή"] = (
     pd.to_numeric(
@@ -46,14 +50,11 @@ df["Εντολή"] = (
 # =====================================
 
 df["Έδρα"] = (
-    df["TSection"]
-    .astype(str)
-    .str[0]
+    df["Γραμμή"]
     .replace({
-        "1": "Γραμμή 1",
-        "2": "Σεπόλια",
-        "3": "Ελληνικό",
-        "S": "Ελληνικό"
+        "Θησείο": "Γραμμή 1",
+        "Σεπόλια": "Σεπόλια",
+        "Ελληνικό": "Ελληνικό"
     })
 )
 
@@ -143,17 +144,17 @@ if search_order:
     ]
 
     st.dataframe(
-        result.sort_values("Date"),
+        result,
         use_container_width=True
     )
 
 # =====================================
-# REPORT
+# ΑΝΑΛΥΤΙΚΗ ΑΝΑΦΟΡΑ
 # =====================================
 
 report_df = df.copy()
 
-report_df["Date_real"] = report_df["Date"]
+report_df["Date_Sort"] = report_df["Date"]
 
 report_df["Date"] = (
     report_df["Date"]
@@ -191,15 +192,23 @@ for area in [
         )
 
         section = section.sort_values(
-            ["Date_real", "Βάρδια", "Εντολή"]
+            [
+                "Date_Sort",
+                "Βάρδια",
+                "Εντολή"
+            ]
         )
 
         st.dataframe(
             section[
                 [
                     "Date",
+                    "Εντολή",
                     "Βάρδια",
-                    "Εντολή"
+                    "TSection",
+                    "Kps/PrScs",
+                    "Installation",
+                    "WorkDescription"
                 ]
             ],
             use_container_width=True
@@ -215,6 +224,10 @@ with pd.ExcelWriter(
     output,
     engine="openpyxl"
 ) as writer:
+
+    # -----------------------
+    # ΣΥΝΟΨΗ
+    # -----------------------
 
     summary_df = pd.DataFrame({
         "Τμήμα": [
@@ -252,6 +265,10 @@ with pd.ExcelWriter(
         index=False
     )
 
+    # -----------------------
+    # Αναλυτικά φύλλα
+    # -----------------------
+
     for area in [
         "Γραμμή 1",
         "Σεπόλια",
@@ -263,21 +280,33 @@ with pd.ExcelWriter(
         ].copy()
 
         section = section.sort_values(
-            ["Date_real", "Βάρδια", "Εντολή"]
+            [
+                "Date_Sort",
+                "Βάρδια",
+                "Εντολή"
+            ]
         )
 
         section = section[
             [
                 "Date",
+                "Εντολή",
                 "Βάρδια",
-                "Εντολή"
+                "TSection",
+                "Kps/PrScs",
+                "Installation",
+                "WorkDescription"
             ]
         ]
 
         summary_row = pd.DataFrame({
             "Date": [f"ΣΥΝΟΛΟ: {len(section)}"],
+            "Εντολή": [""],
             "Βάρδια": [""],
-            "Εντολή": [""]
+            "TSection": [""],
+            "Kps/PrScs": [""],
+            "Installation": [""],
+            "WorkDescription": [""]
         })
 
         export_df = pd.concat(
