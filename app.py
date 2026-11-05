@@ -95,7 +95,9 @@ with c1:
     st.metric(
         "Γραμμή 1",
         len(
-            df[df["Έδρα"] == "Γραμμή 1"]
+            df[
+                df["Έδρα"] == "Γραμμή 1"
+            ]
         )
     )
 
@@ -103,7 +105,9 @@ with c2:
     st.metric(
         "Σεπόλια",
         len(
-            df[df["Έδρα"] == "Σεπόλια"]
+            df[
+                df["Έδρα"] == "Σεπόλια"
+            ]
         )
     )
 
@@ -111,7 +115,9 @@ with c3:
     st.metric(
         "Ελληνικό",
         len(
-            df[df["Έδρα"] == "Ελληνικό"]
+            df[
+                df["Έδρα"] == "Ελληνικό"
+            ]
         )
     )
 
@@ -137,7 +143,7 @@ if search_order:
     ]
 
     st.dataframe(
-        result,
+        result.sort_values("Date"),
         use_container_width=True
     )
 
@@ -147,10 +153,10 @@ if search_order:
 
 report_df = df.copy()
 
+report_df["Date_real"] = report_df["Date"]
+
 report_df["Date"] = (
-    pd.to_datetime(
-        report_df["Date"]
-    )
+    report_df["Date"]
     .dt.strftime("%d/%m/%Y")
 )
 
@@ -184,6 +190,10 @@ for area in [
             use_container_width=True
         )
 
+        section = section.sort_values(
+            ["Date_real", "Βάρδια", "Εντολή"]
+        )
+
         st.dataframe(
             section[
                 [
@@ -191,9 +201,7 @@ for area in [
                     "Βάρδια",
                     "Εντολή"
                 ]
-            ].sort_values(
-                ["Date", "Βάρδια"]
-            ),
+            ],
             use_container_width=True
         )
 
@@ -252,13 +260,19 @@ with pd.ExcelWriter(
 
         section = report_df[
             report_df["Έδρα"] == area
-        ][
+        ].copy()
+
+        section = section.sort_values(
+            ["Date_real", "Βάρδια", "Εντολή"]
+        )
+
+        section = section[
             [
                 "Date",
                 "Βάρδια",
                 "Εντολή"
             ]
-        ].copy()
+        ]
 
         summary_row = pd.DataFrame({
             "Date": [f"ΣΥΝΟΛΟ: {len(section)}"],
