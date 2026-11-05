@@ -1,152 +1,238 @@
 import streamlit as st
 import pandas as pd
+import io
 
 st.set_page_config(
-    page_title="Έλεγχος Κενών Εντολών",
+    page_title="Κενές Εντολές",
     layout="wide"
 )
 
-st.title("Σύγκριση Access και Streamlit")
+st.title("Κενές Εντολές Access")
 
 # =====================================
-# ΦΟΡΤΩΣΗ ΑΡΧΕΙΩΝ
+# ΦΟΡΤΩΣΗ ACCESS QUERY
 # =====================================
 
-prog = pd.read_excel(
-    "data/ΠρογΕργασίες.xlsx",
-    engine="openpyxl"
-)
-
-erg = pd.read_excel(
-    "data/Εργασίες βάρδιας.xlsx",
-    engine="openpyxl"
-)
-
-access_query = pd.read_excel(
+df = pd.read_excel(
     "data/Κενές εντολές.xlsx",
     engine="openpyxl"
 )
 
 # =====================================
-# ΚΑΘΑΡΙΣΜΟΣ
+# ΗΜΕΡΟΜΗΝΙΑ
 # =====================================
 
-prog["Εντολή"] = (
-    pd.to_numeric(
-        prog["Εντολή"],
-        errors="coerce"
-    )
-    .fillna(0)
-    .astype(int)
+df["Date"] = pd.to_datetime(
+    df["Date"],
+    errors="coerce"
+)
+
+# =====================================
+# ΕΔΡΑ
+# =====================================
+
+df["Έδρα"] = (
+    df["TSection"]
     .astype(str)
+    .str[0]
+    .replace({
+        "1": "Γραμμή 1",
+        "2": "Σεπόλια",
+        "3": "Ελληνικό",
+        "S": "Ελληνικό"
+    })
 )
 
-erg["Εντολή"] = (
-    pd.to_numeric(
-        erg["Εντολή"],
-        errors="coerce"
+# =====================================
+# ΦΙΛΤΡΑ
+# =====================================
+
+col1, col2 = st.columns(2)
+
+with col1:
+    from_date = st.date_input(
+        "Από",
+        value=df["Date"].min().date()
     )
-    .fillna(0)
-    .astype(int)
-    .astype(str)
-)
 
-access_query["Εντολή"] = (
-    pd.to_numeric(
-        access_query["Εντολή"],
-        errors="coerce"
+with col2:
+    to_date = st.date_input(
+        "Έως",
+        value=df["Date"].max().date()
     )
-    .fillna(0)
-    .astype(int)
-    .astype(str)
-)
 
-# =====================================
-# JOIN
-# =====================================
-
-merged = prog.merge(
-    erg[
-        [
-            "Εντολή",
-            "Ώρες",
-            "Άτομα"
-        ]
-    ],
-    on="Εντολή",
-    how="left"
-)
-
-# =====================================
-# STREAMLIT QUERY
-# =====================================
-
-open_orders = merged[
-    (merged["Ακύρωση"] == False)
+df = df[
+    (df["Date"] >= pd.Timestamp(from_date))
     &
-    (merged["Ώρες"].isna())
-    &
-    (merged["Άτομα"].isna())
-].copy()
+    (df["Date"] <= pd.Timestamp(to_date))
+]
 
 # =====================================
 # ΣΥΝΟΛΑ
 # =====================================
 
 st.success(
-    f"Streamlit: {len(open_orders)} εγγραφές"
+    f"Σύνολο Κενών Εντολών: {len(df)}"
 )
 
-st.success(
-    f"Access Query: {len(access_query)} εγγραφές"
-)
+c1, c2, c3 = st.columns(3)
+
+with c1:
+    st.metric(
+        "Γραμμή 1",
+        len(df[df["Έδρα"] == "Γραμμή 1"])
+    )
+
+with c2:
+    st.metric(
+        "Σεπόλια",
+        len(df[df["Έδρα"] == "Σεπόλια"])
+    )
+
+with c3:
+    st.metric(
+        "Ελληνικό",
+        len(df[df["Έδρα"] == "Ελληνικό"])
+    )
 
 # =====================================
-# ΣΥΓΚΡΙΣΗ
+# ΑΝΑΖΗΤΗΣΗ
 # =====================================
 
-streamlit_orders = set(
-    open_orders["Εντολή"]
+st.subheader("Αναζήτηση Εντολής")
+
+search_order = st.text_input(
+    "Γράψε αριθμό εντολής"
 )
 
-access_orders = set(
-    access_query["Εντολή"]
-)
+if search_order:
 
-only_streamlit = sorted(
-    streamlit_orders - access_orders
-)
+    result = df[
+        df["Εντολή"]
+        .astype(str)
+        .str.contains(
+            search_order,
+            na=False
+        )
+    ]
 
-only_access = sorted(
-    access_orders - streamlit_orders
-)
+    st.dataframe(
+        result,
+        use_container_width=True
+    )
 
 # =====================================
-# ΜΟΝΟ STREAMLIT
+# ΑΝΑΦΟΡΑ
 # =====================================
 
-st.subheader(
-    f"ΜΟΝΟ ΣΤΟ STREAMLIT ({len(only_streamlit)})"
+report_df = df.copy()
+
+report_df["Date"] = (
+    pd.to_datetime(
+        report_df["Date"]
+    )
+    .dt.strftime("%d/%m/%Y")
 )
 
-st.dataframe(
-    pd.DataFrame(
-        {"Εντολή": only_streamlit}
-    ),
-    use_container_width=True
-)
+for area in [
+    "Γραμμή 1",
+    "Σεπόλια",
+    "Ελληνικό"
+]:
+
+    section = report_df[
+        report_df["Έδρα"] == area
+    ].copy()
+
+    st.subheader(
+        f"{area} - Σύνολο {len(section)}"
+    )
+
+    if len(section) > 0:
+
+        st.dataframe(
+            section[
+                [
+                    "Date",
+                    "Εντολή"
+                ]
+            ],
+            use_container_width=True
+        )
 
 # =====================================
-# ΜΟΝΟ ACCESS
+# EXCEL EXPORT
 # =====================================
 
-st.subheader(
-    f"ΜΟΝΟ ΣΤΗΝ ACCESS ({len(only_access)})"
-)
+output = io.BytesIO()
 
-st.dataframe(
-    pd.DataFrame(
-        {"Εντολή": only_access}
-    ),
-    use_container_width=True
+with pd.ExcelWriter(
+    output,
+    engine="openpyxl"
+) as writer:
+
+    summary_df = pd.DataFrame({
+        "Τμήμα": [
+            "Γραμμή 1",
+            "Σεπόλια",
+            "Ελληνικό"
+        ],
+        "Σύνολο": [
+            len(
+                report_df[
+                    report_df["Έδρα"] == "Γραμμή 1"
+                ]
+            ),
+            len(
+                report_df[
+                    report_df["Έδρα"] == "Σεπόλια"
+                ]
+            ),
+            len(
+                report_df[
+                    report_df["Έδρα"] == "Ελληνικό"
+                ]
+            )
+        ]
+    })
+
+    summary_df.loc[len(summary_df)] = [
+        "ΓΕΝΙΚΟ ΣΥΝΟΛΟ",
+        summary_df["Σύνολο"].sum()
+    ]
+
+    summary_df.to_excel(
+        writer,
+        sheet_name="Σύνοψη",
+        index=False
+    )
+
+    for area in [
+        "Γραμμή 1",
+        "Σεπόλια",
+        "Ελληνικό"
+    ]:
+
+        section = report_df[
+            report_df["Έδρα"] == area
+        ][
+            [
+                "Date",
+                "Εντολή"
+            ]
+        ]
+
+        section.to_excel(
+            writer,
+            sheet_name=area.replace(" ", ""),
+            index=False
+        )
+
+excel_data = output.getvalue()
+
+st.download_button(
+    "⬇️ Κατέβασε Αναφορά Excel",
+    data=excel_data,
+    file_name="Κενές_Εντολές.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
